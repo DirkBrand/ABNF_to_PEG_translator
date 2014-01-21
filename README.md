@@ -14,4 +14,4 @@ Usage
 Call the binary with the a path to an ABNF file as an argument.
 Ex. `$ translator ~/myABNF.abnf`
 
-Note: The extension of the file does not matter, it just needs to have valid ABNf syntax.
+Note: The extension of the file does not matter, it just needs to have valid ABNF syntax.
