@@ -37,6 +37,14 @@ import (
 	"strings"
 )
 
+type Rule struct {
+	A    string
+	e    []string
+	comm string
+}
+
+var allRules []Rule
+
 func main() {
 
 	if len(os.Args) <= 1 {
@@ -56,6 +64,7 @@ func main() {
 	defer f.Close()
 	r := bufio.NewReader(f)
 	prev_line := ""
+
 	for {
 		line, err := r.ReadString(10) // 0x0A separator = newline
 		if err == io.EOF {
@@ -94,7 +103,7 @@ func main() {
 
 			// Rule
 		} else if isABNFRule(content) {
-			content = ruleFmt(content)
+			content = ruleFmt(content, comment)
 
 			line = content + "\t\t" + comment + "\n"
 
@@ -106,7 +115,9 @@ func main() {
 			} else {
 				tabs = detTabs(utils.CountPrefixSpace(prev_line))
 			}
-			content = tabs + contentFmt(content)
+			content = contentFmt(content)
+			allRules[len(allRules)-1].e = append(allRules[len(allRules)-1].e, regexp.MustCompile(`[^"]/`).Split(content, -1)...)
+			content = tabs + content
 
 			line = content + "\t\t" + comment + "\n"
 
@@ -115,6 +126,31 @@ func main() {
 		prev_line = strings.Replace(line, "\t", "", -1)
 
 		s += line
+	}
+
+	var tempRules []Rule
+	var someFix bool
+	for _, pRule := range allRules {
+		//fmt.Println(pRule)
+		A, AP := removeDirectLeftRecursion(pRule)
+		tempRules = append(tempRules, A)
+		if len(AP.A) > 0 {
+			tempRules = append(tempRules, AP)
+			someFix = true
+		}
+
+	}
+	allRules = tempRules
+
+	if someFix {
+		// Write to output
+		fo, err := os.Create(filename + ".RR.peg")
+		if err != nil {
+			panic(err)
+		}
+		fo.WriteString(printRules(allRules))
+		fo.Close()
+		fmt.Println("Left-Recursion free PEG generated")
 	}
 
 	// Write to output
@@ -140,9 +176,10 @@ func contentFmt(content string) string {
 			if len(strings.TrimSpace(sent)) > 0 {
 				for _, word := range strings.Split(sent, " ") {
 					if len(word) > 0 {
-						e += wordFmt(strings.TrimSpace(word)) + " / "
+						e += wordFmt(strings.TrimSpace(word)) + " "
 					}
 				}
+				e = strings.TrimSpace(e) + " / "
 			}
 		}
 		if !strings.HasSuffix(content, "/") {
@@ -161,12 +198,14 @@ func contentFmt(content string) string {
 	return strings.TrimSpace(e)
 }
 
-func ruleFmt(line string) string {
+func ruleFmt(line string, comment string) string {
 	var s string
 	arr := strings.Split(line, "=")
 	A_arr := strings.Split(strings.TrimSpace(arr[0]), "-")
 	A := utils.ToCamelCase(A_arr)
 	e := contentFmt(arr[1])
+
+	allRules = append(allRules, Rule{A, regexp.MustCompile(`[^"]/`).Split(e, -1), comment})
 
 	s += A + " <- " + e
 	return s
@@ -206,9 +245,10 @@ func wordFmt(word string) string {
 		s = word
 
 		// Non-Terminal
-	} else {
-
+	} else if !utils.IsUpper(word) && len(word) > 1 {
 		s = utils.ToCamelCase(strings.Split(word, "-"))
+	} else {
+		s = word
 	}
 
 	return s
@@ -237,13 +277,13 @@ func regexFmt(word string) string {
 	// Optional regex
 	r, _ := regexp.Compile(`\[([^\"]+?)\]`)
 	for len(r.FindString(word)) > 0 {
-		fmt.Println(r.FindString(word))
+		//fmt.Println(r.FindString(word))
 		rep := r.FindString(word)[1 : len(r.FindString(word))-1]
 		if strings.Contains(rep, " ") {
 			rep = "(" + rep + ")"
 		}
 		word = strings.Replace(word, r.FindString(word), rep+"?", -1)
-		fmt.Println(word)
+		//fmt.Println(word)
 
 	}
 	// one or more
@@ -268,4 +308,46 @@ func regexFmt(word string) string {
 	}
 
 	return word
+}
+
+func removeDirectLeftRecursion(prodRule Rule) (Rule, Rule) {
+	var A Rule
+	var A_Prime Rule
+
+	var lrRules []string
+	var bRules []string
+
+	for _, comp := range prodRule.e {
+		if strings.HasPrefix(strings.TrimSpace(comp), prodRule.A+" ") {
+			lrRules = append(lrRules, strings.TrimSpace(comp))
+		} else {
+			bRules = append(bRules, strings.TrimSpace(comp))
+		}
+	}
+
+	if len(lrRules) > 0 {
+		// A production
+		A = Rule{prodRule.A, []string{}, prodRule.comm}
+		for _, beta := range bRules {
+			A.e = append(A.e, beta+" "+prodRule.A+"'")
+		}
+
+		// A' production
+		A_Prime = Rule{prodRule.A + "'", []string{"ε"}, ""}
+		for _, alpha := range lrRules {
+			A_Prime.e = append(A_Prime.e, strings.TrimPrefix(alpha, prodRule.A)+" "+A_Prime.A)
+		}
+
+		return A, A_Prime
+	} else {
+		return prodRule, Rule{}
+	}
+}
+
+func printRules(all []Rule) string {
+	var s []string
+	for _, pRule := range all {
+		s = append(s, pRule.A+" <- "+strings.Join(pRule.e, " /")+"\t\t"+pRule.comm+"\n")
+	}
+	return strings.Join(s, "\n")
 }

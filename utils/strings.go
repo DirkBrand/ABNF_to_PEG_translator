@@ -41,3 +41,14 @@ func ToCamelCase(array []string) string {
 	}
 	return A
 }
+
+func IsUpper(s string) bool {
+	flag := true
+	for _, c := range s {
+		if !unicode.IsUpper(c) {
+			flag = false
+		}
+	}
+
+	return flag
+}
