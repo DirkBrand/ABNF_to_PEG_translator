@@ -52,3 +52,18 @@ func IsUpper(s string) bool {
 
 	return flag
 }
+
+func Strcmp(a, b string) int {
+	var min = len(b)
+	if len(a) < len(b) {
+		min = len(a)
+	}
+	var diff int
+	for i := 0; i < min && diff == 0; i++ {
+		diff = int(a[i]) - int(b[i])
+	}
+	if diff == 0 {
+		diff = len(a) - len(b)
+	}
+	return diff
+}
