@@ -120,7 +120,20 @@ func main() {
 			// Add to all rules
 			for ind, rul := range allRules {
 				if utils.Strcmp(rul.A, strings.TrimSpace(allRules[i].A)) == 0 {
-					allRules[ind].e = append(allRules[ind].e, regexp.MustCompile(`[^"]/`).Split(contentFmt(strings.Split(content, "=/")[1]), -1)...)
+					e_ar := regexp.MustCompile(`[^"]/`).Split(contentFmt(strings.Split(content, "=/")[1]), -1)
+					for _, e := range e_ar {
+						found := false
+						for _, e_p := range allRules[ind].e {
+							if strings.Contains(e_p, e) {
+								found = true
+								break
+							}
+						}
+						if !found {
+							allRules[ind].e = append(allRules[ind].e, e)
+						}
+					}
+
 					break
 				}
 			}
@@ -160,8 +173,14 @@ func main() {
 			A, AP := removeDirectLeftRecursion(group)
 
 			if len(AP.A) > 0 && len(A.A) > 0 {
-				tempRules = append(tempRules, A)
-				tempRules = append(tempRules, AP)
+				if len(A.e) > 0 {
+					fmt.Println("HERE")
+					tempRules = append(tempRules, A)
+				}
+
+				if len(AP.e) > 0 {
+					tempRules = append(tempRules, AP)
+				}
 			} else {
 				tempRules = append(tempRules, group...)
 			}
@@ -267,7 +286,7 @@ func wordFmt(word string) string {
 		s = word
 
 		// Non-Terminal
-	} else if !utils.IsUpper(word) && len(word) > 1 {
+	} else if !utils.IsUpper(word) && len(regexp.MustCompile("([a-z,A-Z]+)").FindString(word)) > 1 {
 		s = utils.ToCamelCase(strings.Split(word, "-"))
 	} else {
 		s = word
@@ -311,10 +330,8 @@ func regexFmt(word string) string {
 	// one or more
 	r, _ = regexp.Compile(`[1]\*[(](.+?)[)]|[1]\*(\S+)`)
 	if len(r.FindString(word)) > 0 {
-		//fmt.Println(r.FindString(word), " ------> ", word)
 		rep := r.FindString(word)[2:] + "+"
 		word = strings.Replace(word, r.FindString(word), rep, -1)
-		//fmt.Println(word + "\n")
 	}
 
 	// zero or more
@@ -323,10 +340,8 @@ func regexFmt(word string) string {
 		fmt.Println(err)
 	}
 	for len(r.FindString(word)) > 0 {
-		//fmt.Println(r.FindString(word))
 		rep := r.FindString(word)[1:]
 		word = r.ReplaceAllString(word, rep+"*")
-		//fmt.Println(word)
 	}
 
 	return word
@@ -341,8 +356,17 @@ func removeDirectLeftRecursion(prodRules []Rule) (Rule, Rule) {
 
 	for _, pRule := range prodRules {
 		for _, comp := range pRule.e {
+			fmt.Println(comp)
 			if strings.HasPrefix(strings.TrimSpace(comp), pRule.A+" ") {
 				lrRules = append(lrRules, strings.TrimSpace(comp))
+
+			} else if strings.HasPrefix(comp, regexp.MustCompile(`([^\"]+?)\?([\s]*)`+pRule.A+`([\s]*)`).FindString(comp)) {
+				lrRules = append(lrRules, regexp.MustCompile(`([^\"]+?)\?([\s]*)`+pRule.A+`([\s]*)`).FindString(comp))
+
+			} else if strings.HasPrefix(comp, regexp.MustCompile(`(.+?)\*([\s]*)`).FindString(comp)) {
+				fmt.Println("HERE", regexp.MustCompile(`(.+?)\*`).FindString(comp))
+				lrRules = append(lrRules, regexp.MustCompile(`\*([^\s\"]+)`+pRule.A+`([\s]+)`).FindString(comp))
+
 			} else {
 				bRules = append(bRules, strings.TrimSpace(comp))
 			}
@@ -350,14 +374,21 @@ func removeDirectLeftRecursion(prodRules []Rule) (Rule, Rule) {
 	}
 
 	if len(lrRules) > 0 {
+		var ap string
+		if len(bRules) > 0 {
+			ap = prodRules[0].A + "'"
+		} else {
+			ap = prodRules[0].A
+		}
+
 		// A production
 		A = Rule{prodRules[0].A, []string{}, prodRules[0].comm, prodRules[0].floating, prodRules[0].tabs}
 		for _, beta := range bRules {
-			A.e = append(A.e, beta+" "+prodRules[0].A+"'")
+			A.e = append(A.e, beta+" "+ap)
 		}
 
 		// A' production
-		A_Prime = Rule{prodRules[0].A + "'", []string{"ε"}, "", false, ""}
+		A_Prime = Rule{ap, []string{"ε"}, "", false, ""}
 		for _, alpha := range lrRules {
 			A_Prime.e = append(A_Prime.e, strings.TrimPrefix(alpha, prodRules[0].A)+" "+A_Prime.A)
 		}
@@ -409,15 +440,24 @@ func printRules(all []Rule) string {
 
 		if len(pRule.A) > 0 {
 			if pRule.floating {
-				s = append(s, pRule.tabs+strings.Join(pRule.e, " / "))
-			} else {
-				s = append(s, pRule.A+" <- "+strings.Join(pRule.e, " / "))
-			}
+				if len(pRule.e) > 0 {
+					s = append(s, pRule.tabs+strings.Join(pRule.e, " / "))
 
-			if len(strings.TrimSpace(pRule.comm)) > 1 {
-				s[len(s)-1] += "\t\t"
+					if len(strings.TrimSpace(pRule.comm)) > 1 {
+						s[len(s)-1] += "\t\t"
+					}
+					s[len(s)-1] += pRule.comm
+				}
+			} else {
+				if len(pRule.e) > 0 {
+					s = append(s, pRule.A+" <- "+strings.Join(pRule.e, " / "))
+
+					if len(strings.TrimSpace(pRule.comm)) > 1 {
+						s[len(s)-1] += "\t\t"
+					}
+					s[len(s)-1] += pRule.comm
+				}
 			}
-			s[len(s)-1] += pRule.comm
 
 		} else {
 			s = append(s, pRule.comm)
