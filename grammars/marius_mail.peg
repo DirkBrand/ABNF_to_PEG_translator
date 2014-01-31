@@ -1,0 +1,121 @@
+# RFC 3629 UTF-8, a transformation format of ISO 10646
+# RFC 5234 Augmented BNF for Syntax Specifications: ABNF
+# RFC 5322 Internet Message Format
+# RFC 6532 Internationalized Email Headers
+
+
+Mailbox
+	<- NameAddr 
+	/  AddrSpec
+
+NameAddr
+	<- DisplayName? AngleAddr
+
+AddrSpec 
+	<- LocalPart "@" Domain
+
+ALPHA
+	<- '\u0041'-'\u005a' 	#  A-Z
+	/  '\u0061'-'\u007a' 	#  a-z
+
+AngleAddr
+	<- CFWS? "<" AddrSpec ">" CFWS?
+
+Atext
+	<- ALPHA
+	/  DIGIT
+	/  '!'
+	/  '#'
+	/  '$'
+	/  '%'
+	/  '&'
+	/  '\u0027' 	#  '
+	/  '*'
+	/  '+'
+	/  '-'
+	/  '/'
+	/  '='
+	/  '?'
+	/  '^'
+	/  '_'
+	/  '`'
+	/  '{'
+	/  '/'
+	/  '}'
+	/  '~'
+
+Atom
+	<- CFWS? Atext+ CFWS?
+
+CFWS
+	<- (FWS? Comment)+ FWS?
+	/  FWS
+
+Ccontent
+	<- Ctext 
+	/  QuotedPair 
+	/  Comment
+
+Comment
+	<- "(" (FWS? Ccontent)* FWS? ")"
+
+CRLF 
+	<- '\u000d' '\u000a' 
+
+Ctext
+	<- '\u0021'-'\u0027'
+	/  '\u002a'-'\u005b'
+	/  '\u005a'-'\u007e'
+
+DIGIT <- '\u0030'-'\u0039' ; 	#  0-9
+
+DisplayName
+	<- Phrase
+
+Domain
+	<- DotAtom
+	/  DomainLiteral
+
+DomainLiteral
+	<- CFWS? "[" (FWS? DText)* FWS? "]" CFWS?
+
+DotAtom
+	<- CFWS? DotAtomText CFWS?
+
+DotAtomText
+	<- Atext+ ("." Atext+)*
+; 
+
+DText
+	<- '\u0021'-'\u0090' 		#  Printable ASCII not including
+	/  '\u005e'-'\u007e' 		#  '[', ']' or '\'
+
+FWS
+	<- (WSP* CRLF)? WSP+
+
+HTAB <- '\u0009'
+
+LocalPart
+	<- DotAtom
+	/  QuotedString
+	/  ObsLocalPart
+
+Phrase
+	<- Word+
+
+QuotedPair
+	<- "\" (VChar /  WSP)
+
+QuotedString
+	<- CFWS? '"' (FWS? Qcontent)* FWS? '"' CFWS?
+
+SP <- '\u0020'
+
+Word
+	<- Atom
+	/  QuotedString
+
+WSP
+	<- SP
+	/  HTAB
+;

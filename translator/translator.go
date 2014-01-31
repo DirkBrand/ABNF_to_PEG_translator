@@ -54,7 +54,8 @@ func main() {
 	}
 
 	abnf_path := os.Args[1]
-	filename := strings.Split(abnf_path, ".")[0]
+	path_split := strings.Split(abnf_path, ".")
+	filename := strings.Join(path_split[:len(path_split)-1], ".")
 
 	// Open the reader
 	f, err := os.Open(abnf_path)
@@ -174,7 +175,6 @@ func main() {
 
 			if len(AP.A) > 0 && len(A.A) > 0 {
 				if len(A.e) > 0 {
-					fmt.Println("HERE")
 					tempRules = append(tempRules, A)
 				}
 
@@ -192,7 +192,7 @@ func main() {
 	allRules = tempRules
 
 	// INDIRECT LEFT RECURSION
-	allRules = removeIndirectLeftRecursion(allRules)
+	//allRules = removeIndirectLeftRecursion(allRules)
 
 	// Write to output
 	fo, err := os.Create(filename + ".peg")
@@ -201,7 +201,7 @@ func main() {
 	}
 	fo.WriteString(printRules(allRules))
 	fo.Close()
-	fmt.Println("PEG generated")
+	fmt.Println(filename+".peg", "generated")
 }
 
 func contentFmt(content string) string {
@@ -323,7 +323,7 @@ func regexFmt(word string) string {
 		if strings.Contains(rep, " ") {
 			rep = "(" + rep + ")"
 		}
-		word = strings.Replace(word, r.FindString(word), rep+"?", -1)
+		word = strings.Replace(word, r.FindString(word), " "+rep+"? ", -1)
 		//fmt.Println(word)
 
 	}
@@ -356,17 +356,16 @@ func removeDirectLeftRecursion(prodRules []Rule) (Rule, Rule) {
 
 	for _, pRule := range prodRules {
 		for _, comp := range pRule.e {
-			fmt.Println(comp)
 			if strings.HasPrefix(strings.TrimSpace(comp), pRule.A+" ") {
 				lrRules = append(lrRules, strings.TrimSpace(comp))
 
-			} else if strings.HasPrefix(comp, regexp.MustCompile(`([^\"]+?)\?([\s]*)`+pRule.A+`([\s]*)`).FindString(comp)) {
-				lrRules = append(lrRules, regexp.MustCompile(`([^\"]+?)\?([\s]*)`+pRule.A+`([\s]*)`).FindString(comp))
+				/*else if strings.HasPrefix(comp, regexp.MustCompile(`([^\"]+?)\?([\s]*)`+pRule.A+`([\s]*)`).FindString(comp)) {
+					lrRules = append(lrRules, regexp.MustCompile(`([^\"]+?)\?([\s]*)`+pRule.A+`([\s]*)`).FindString(comp))
 
-			} else if strings.HasPrefix(comp, regexp.MustCompile(`(.+?)\*([\s]*)`).FindString(comp)) {
-				fmt.Println("HERE", regexp.MustCompile(`(.+?)\*`).FindString(comp))
-				lrRules = append(lrRules, regexp.MustCompile(`\*([^\s\"]+)`+pRule.A+`([\s]+)`).FindString(comp))
-
+				} else if strings.HasPrefix(comp, regexp.MustCompile(`(.+?)\*([\s]*)`).FindString(comp)) {
+					fmt.Println("HERE", regexp.MustCompile(`(.+?)\*`).FindString(comp))
+					lrRules = append(lrRules, regexp.MustCompile(`\*([^\s\"]+)`+pRule.A+`([\s]+)`).FindString(comp))
+				*/
 			} else {
 				bRules = append(bRules, strings.TrimSpace(comp))
 			}

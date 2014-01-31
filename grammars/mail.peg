@@ -1,0 +1,83 @@
+# ABNF for rfc5322
+# Dirk Brand
+
+Mailbox <- NameAddr / AddrSpec
+
+NameAddr <- DisplayName? AngleAddr
+
+AngleAddr <- CFWS? "<" AddrSpec ">" CFWS?
+
+AddrSpec <- LocalPart "@" Domain
+
+LocalPart <- DotAtom / QuotedString
+
+Domain <- DotAtom / DomainLiteral
+
+DomainLiteral <- CFWS? "[" ( FWS? Dtext)* FWS? "]" CFWS?
+
+Dtext <- '\u0021'-'\u005a' / 		# Printable US-ASCII
+         '\u005e'-'\u007e'		#  characters not including
+                          		#  "[", "]",
+                          		# or "\"
+
+DisplayName <- Phrase
+
+Word <- Atom / QuotedString
+
+Phrase <- (Word)+
+
+QuotedString <- CFWS? DQUOTE ( FWS? Qcontent)*
+                FWS? DQUOTE CFWS?
+
+Atext <- ALPHA / DIGIT / 		# Printable US-ASCII
+         "!" / "#" / 		#  characters not including
+         "$" / "%" / 		#  specials.  Used for atoms.
+         "&" / "'" / 
+         "*" / "+" / 
+         "-" / "/" / 
+         "=" / "?" / 
+         "^" / "_" / 
+         "`" / "{" / 
+         "|" / "}" / 
+         "~"
+
+ALPHA <- '\u0041'-'\u005a' / 
+         '\u0061'-'\u007a'
+
+Atom <- CFWS? Atext+ CFWS?
+
+DotAtomText <- Atext+ ("." Atext+)*
+
+DotAtom <- CFWS? DotAtomText CFWS?
+
+CFWS <- (( FWS? Comment)+ FWS? ) / FWS
+
+FWS <- (WSP* CRLF)? WSP+		# Folding white space
+
+Comment <- "(" ( FWS? Ccontent)* FWS? ")"
+
+Ccontent <- Ctext / 
+            QuotedPair / 
+            Comment
+
+Ctext <- '\u0021'-'\u0027' / 		# Printable US-ASCII
+         '\u002a'-'\u005b' / 		#  characters not including
+         '\u005d'-'\u007e'		#  "(", ")", or "\"
+
+QuotedPair <- "\" (VCHAR / WSP)
+
+Qtext <- '\u0021' / 		# Printable US-ASCII
+         '\u0023'-'\u005b' / 		#  characters not including
+         '\u005d'-'\u007e'		#  "\" or the quote character
+
+Qcontent <- Qtext / 
+            QuotedPair
+
+CRLF <- '\u000d' / 
+        '\u000a'
+
+WSP <- SP / HTAB
+
+SP <- '\u0020'
+
+HTAB <- '\u0009'

@@ -1,0 +1,4 @@
+S = R a / A a / a
+R = a b
+A = A R / A T / b ; This is where the L-recursion starts
+T = T b / a

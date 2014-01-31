@@ -1,0 +1,5 @@
+Add <- Mult '+' Add / Mult
+Mult <- Prim '*' Mult / Prim
+Prim <- '(' Add ')' / Dec
+Dec <- [0-9]
+

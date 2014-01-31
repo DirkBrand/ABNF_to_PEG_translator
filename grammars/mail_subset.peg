@@ -1,0 +1,21 @@
+# ABNF for rfc5322
+# Dirk Brand
+
+Mailbox <- NameAddr / AddrSpec
+
+NameAddr <- DisplayName? AngleAddr
+
+AngleAddr <- CFWS? "<" AddrSpec ">" CFWS?
+
+AddrSpec <- LocalPart "@" Domain
+
+LocalPart <- DotAtom / QuotedString
+
+Domain <- DotAtom / DomainLiteral
+
+DomainLiteral <- CFWS? "[" (FWS? Dtext)* FWS? "]" CFWS?
+
+Dtext <- '\u0021'-'\u005a' / 		# Printable US-ASCII
+         '\u005e'-'\u007e'		#  characters not including
+                          		#  "[", "]",
+                          		# or "\"

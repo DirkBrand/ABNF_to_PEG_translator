@@ -1,0 +1,11 @@
+S <- R a / A a / a		
+
+R <- a b		
+
+A <- b A'		# This is where the L-recursion starts
+
+A' <- ε / R A' / T A'		
+
+T <- a T'		
+
+T' <- ε / b T'		

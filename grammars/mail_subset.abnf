@@ -1,0 +1,21 @@
+; ABNF for rfc5322 
+; Dirk Brand
+
+mailbox 	= name-addr / addr-spec
+
+name-addr 	= [display-name] angle-addr
+
+angle-addr 	= [CFWS] "<" addr-spec ">" [CFWS]
+
+addr-spec	= local-part "@" domain
+
+local-part	= dot-atom / quoted-string
+
+domain		= dot-atom / domain-literal
+
+domain-literal	= [CFWS] "[" *([FWS] dtext) [FWS] "]" [CFWS]
+
+dtext           = %d33-90 /          ; Printable US-ASCII
+                  %d94-126           ;  characters not including
+                                       ;  "[", "]", 
+					; or "\"

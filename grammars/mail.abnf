@@ -1,0 +1,83 @@
+; ABNF for rfc5322 
+; Dirk Brand
+
+mailbox 	= name-addr / addr-spec
+
+name-addr 	= [display-name] angle-addr
+
+angle-addr 	= [CFWS] "<" addr-spec ">" [CFWS]
+
+addr-spec	= local-part "@" domain
+
+local-part	= dot-atom / quoted-string
+
+domain		= dot-atom / domain-literal
+
+domain-literal	= [CFWS] "[" *([FWS] dtext) [FWS] "]" [CFWS]
+
+dtext           = %d33-90 /          ; Printable US-ASCII
+                  %d94-126           ;  characters not including
+                                       ;  "[", "]", 
+					; or "\"
+
+display-name    = phrase
+
+word            = atom / quoted-string
+
+phrase          = 1*(word)
+
+quoted-string   = [CFWS] DQUOTE *([FWS] qcontent) 
+		  [FWS] DQUOTE[CFWS]
+
+atext           = ALPHA / DIGIT /    ; Printable US-ASCII
+                  "!" / "#" /        ;  characters not including
+                  "$" / "%" /        ;  specials.  Used for atoms.
+                  "&" / "'" /
+                  "*" / "+" /
+                  "-" / "/" /
+                  "=" / "?" /
+                  "^" / "_" /
+                  "`" / "{" /
+                  "|" / "}" /
+                  "~"
+
+ALPHA		= %d65-90 / 
+		  %d97-122
+
+atom            = [CFWS] 1*atext [CFWS]
+
+dot-atom-text   = 1*atext *("." 1*atext)
+
+dot-atom        = [CFWS] dot-atom-text [CFWS]
+
+CFWS            = (1*([FWS] comment) [FWS]) / FWS
+
+FWS             = [*WSP CRLF] 1*WSP	; Folding white space
+
+comment         = "(" *([FWS] ccontent) [FWS] ")"
+
+ccontent        = ctext / 
+	   	  quoted-pair / 
+		  comment
+
+ctext           = %d33-39 /          ; Printable US-ASCII
+                  %d42-91 /          ;  characters not including
+                  %d93-126           ;  "(", ")", or "\"
+
+quoted-pair     = "\" (VCHAR / WSP)
+
+qtext           = %d33 /             ; Printable US-ASCII
+                  %d35-91 /          ;  characters not including
+                  %d93-126           ;  "\" or the quote character
+
+qcontent        = qtext / 
+		  quoted-pair
+
+CRLF		= %d13 / 
+		  %d10
+
+WSP		= SP / HTAB
+
+SP		= %d32
+
+HTAB		= %d9

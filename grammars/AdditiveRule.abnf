@@ -1,0 +1,3 @@
+S = R a / A a / a ; Added to this
+S =/ b / [CFWS] / d
+S =/ a a / [CFWS]
